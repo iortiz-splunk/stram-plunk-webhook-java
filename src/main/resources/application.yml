@@ -1,0 +1,23 @@
+server:
+  port: 8000 # Application will run on port 8000
+
+spring:
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    database: ${REDIS_DB:0}
+
+app:
+  stream:
+    api-secret: ${STREAM_API_SECRET:your_stream_api_secret_here}
+  splunk:
+    hec-url: ${SPLUNK_HEC_URL:https://localhost:8088/services/collector/event}
+    hec-token: ${SPLUNK_HEC_TOKEN:your_splunk_hec_token_here}
+    # Set to true for production if Splunk HEC uses a trusted certificate
+    # Set to false for development/testing if using self-signed or untrusted certs
+    hec-ssl-verify: ${SPLUNK_HEC_SSL_VERIFY:false}
+  queue:
+    name: ${WEBHOOK_QUEUE_NAME:stream_webhooks}
+  worker:
+    deduplication-window-seconds: ${DEDUPLICATION_WINDOW_SECONDS:300} # 5 minutes
+    poll-interval-ms: 1000 # How often the worker polls Redis (1 second)
