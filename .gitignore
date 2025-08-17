@@ -21,7 +21,7 @@
 *.rar
 
 # --- Add this line to re-include the specific AppDynamics agent JAR ---
-!appdynamics-agent/*
+appdynamics-agent/*
 
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
