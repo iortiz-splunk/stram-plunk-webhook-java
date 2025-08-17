@@ -9,10 +9,14 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
+    healthcheck: # Add a proper healthcheck for Redis itself
+      test: ["CMD", "redis-cli", "ping"] # Test if Redis is responding to PING
+      interval: 1s # Check every 1 second
+      timeout: 3s  # Give it 3 seconds to respond
+      retries: 5   # Retry 5 times before marking as unhealthy
 
   java-webhook-app:
     build: .
-    # command: java -jar app.jar # ENTRYPOINT in Dockerfile handles this
     ports:
       - "8000:8000"
     environment:
@@ -21,19 +25,20 @@ services:
       SPLUNK_HEC_URL: "${SPLUNK_HEC_URL}"
       SPLUNK_HEC_TOKEN: "${SPLUNK_HEC_TOKEN}"
       SPLUNK_HEC_SSL_VERIFY: "${SPLUNK_HEC_SSL_VERIFY}"
-      REDIS_HOST: redis # Service name in docker-compose is the hostname
-      REDIS_PORT: 6379
-      REDIS_DB: 0
+      SPRING_REDIS_HOST: redis # This is the crucial line
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_DATABASE: 0
       WEBHOOK_QUEUE_NAME: "${WEBHOOK_QUEUE_NAME}"
       DEDUPLICATION_WINDOW_SECONDS: "${DEDUPLICATION_WINDOW_SECONDS}"
     depends_on:
-      - redis
-    # Ensure the app starts after Redis is ready (optional but good practice for production)
-    healthcheck:
-      test: ["CMD", "redis-cli", "-h", "redis", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      redis:
+        condition: service_healthy # IMPORTANT: Only start if Redis is healthy
+    # Remove the healthcheck from java-webhook-app, it's redundant here
+    # healthcheck:
+    #   test: ["CMD", "redis-cli", "-h", "redis", "ping"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 5
 
 volumes:
   redis_data:

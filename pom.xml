@@ -5,8 +5,8 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.2</version> <!-- Use a recent stable Spring Boot version -->
-        <relativePath/> <!-- lookup parent from repository -->
+        <version>3.3.2</version>
+        <relativePath/>
     </parent>
     <groupId>com.example</groupId>
     <artifactId>stream-splunk-webhook</artifactId>
@@ -15,31 +15,44 @@
     <description>Stream Webhook to Splunk Forwarder</description>
 
     <properties>
-        <java.version>17</java.version> <!-- Recommended Java LTS version for Spring Boot 3 -->
+        <java.version>17</java.version>
     </properties>
 
     <dependencies>
         <!-- Spring Boot Web Starter for REST endpoints -->
         <dependency>
-            <groupId>org.springframework.boot</
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- NEW: Spring Boot WebFlux Starter for WebClient -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
+
+        <!-- Explicitly add reactor-netty-http -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-http</artifactId>
+        </dependency>
+        <!-- NEW: Explicitly add reactor-netty-core -->
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty-core</artifactId>
+        </dependency>
+
         <!-- Spring Boot Data Redis Starter for Redis integration -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
         <!-- Spring Boot Actuator for health checks (optional but good) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
-        <!-- For HTTP client (RestTemplate is included with web, but WebClient is more modern for async) -->
-        <!-- We'll use RestTemplate for simplicity in the worker, but WebClient is an option -->
-        <!-- <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency> -->
 
         <!-- For logging (slf4j is default with Spring Boot) -->
         <dependency>

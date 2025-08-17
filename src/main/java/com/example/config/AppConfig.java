@@ -3,7 +3,19 @@ package com.example.streamsplunkwebhook.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
+
+import javax.net.ssl.SSLException;
+import java.time.Duration;
+
+// NEW/CORRECTED IMPORT for Spring's ReactorClientHttpConnector
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+
 
 @Configuration
 public class AppConfig {
@@ -58,10 +70,32 @@ public class AppConfig {
     }
 
     @Bean
-    public RestTemplate restTemplate() {
-        // For production, configure a proper HttpClient with SSL context if splunkHecSslVerify is true
-        // and you have custom CA certificates.
-        // For verify=false, a simple RestTemplate is fine.
-        return new RestTemplate();
+    public WebClient.Builder webClientBuilder() throws SSLException {
+        HttpClient httpClient;
+
+        if (!splunkHecSslVerify) {
+            io.netty.handler.ssl.SslContext sslContext = SslContextBuilder.forClient()
+                    .sslProvider(SslProvider.JDK)
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .build();
+
+            httpClient = HttpClient.create(ConnectionProvider.builder("splunk-hec-pool")
+                            .maxConnections(500)
+                            .maxIdleTime(Duration.ofSeconds(30))
+                            .maxLifeTime(Duration.ofSeconds(60))
+                            .pendingAcquireTimeout(Duration.ofSeconds(5))
+                            .build())
+                    .secure(sslContextSpec -> sslContextSpec.sslContext(sslContext));
+        } else {
+            httpClient = HttpClient.create(ConnectionProvider.builder("splunk-hec-pool")
+                            .maxConnections(500)
+                            .maxIdleTime(Duration.ofSeconds(30))
+                            .maxLifeTime(Duration.ofSeconds(60))
+                            .pendingAcquireTimeout(Duration.ofSeconds(5))
+                            .build());
+        }
+
+        // This is the CORRECT line: use Spring's ReactorClientHttpConnector
+        return WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient));
     }
 }

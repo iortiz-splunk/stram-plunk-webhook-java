@@ -33,10 +33,14 @@ public class RedisQueueService {
     }
 
     public String dequeueWebhook(long timeoutSeconds) {
-        List<String> result = redisTemplate.opsForList().leftPop(webhookQueueName, Duration.ofSeconds(timeoutSeconds));
-        if (result != null && !result.isEmpty()) {
-            return result.get(0); // blpop returns a list containing the key and the value
+        String result = redisTemplate.opsForList().leftPop(webhookQueueName, Duration.ofSeconds(timeoutSeconds));
+        if (result != null) {
+            // Log that an item was dequeued
+            log.debug("Dequeued item from Redis queue: {}", result);
+            return result;
         }
+        // Log that no item was found (only at debug level to avoid clutter)
+        log.debug("No item found in Redis queue after {} seconds.", timeoutSeconds);
         return null;
     }
 
@@ -48,5 +52,6 @@ public class RedisQueueService {
         redisTemplate.opsForSet().add(processedSetKey, webhookId);
         // Set expiry for the deduplication key
         redisTemplate.expire(processedSetKey, deduplicationWindowSeconds, TimeUnit.SECONDS);
+        log.debug("Marked webhook ID {} as processed in Redis for deduplication.", webhookId);
     }
 }

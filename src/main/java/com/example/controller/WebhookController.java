@@ -39,12 +39,16 @@ public class WebhookController {
             @RequestHeader("X-Webhook-Id") String xWebhookId,
             @RequestHeader("X-Api-Key") String xApiKey) {
 
-        log.info("Received webhook with ID: {}", xWebhookId);
+        // Log the initial receipt of the webhook with its ID
+        log.info("Received webhook with ID: {}. Checking signature...", xWebhookId);
 
         if (!signatureVerifier.verifySignature(rawBody, xSignature, appConfig.getStreamApiSecret())) {
-            log.warn("Invalid X-Signature for webhook ID: {}", xWebhookId);
+            log.warn("Invalid X-Signature for webhook ID: {}. Request rejected.", xWebhookId);
             return new ResponseEntity<>("Invalid X-Signature", HttpStatus.FORBIDDEN);
         }
+
+        // Log successful signature verification
+        log.info("Signature verified for webhook ID: {}. Enqueuing for processing.", xWebhookId);
 
         try {
             // Create a composite payload to store in Redis, including metadata
@@ -56,9 +60,11 @@ public class WebhookController {
 
             redisQueueService.enqueueWebhook(webhookData.toString());
 
+            // Log successful enqueuing
+            log.info("Webhook ID {} successfully enqueued.", xWebhookId);
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (Exception e) {
-            log.error("Error processing webhook ID {}: {}", xWebhookId, e.getMessage(), e);
+            log.error("Error processing or enqueuing webhook ID {}: {}", xWebhookId, e.getMessage(), e);
             return new ResponseEntity<>("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
